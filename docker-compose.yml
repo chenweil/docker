@@ -1,32 +1,40 @@
 version: '3.5'
 services:
   nginx:
-    image: nginx:latest
+    image: chenwl2016/nginx-stable:1.0.1
     container_name: nginx
     hostname: nginx
+    restart: always
     ports:
       - "8081:8081"
-      - "8011:8011"
-      - "8082:8082"
+      # - "8011:8011"
+      # - "8082:8082"
+      - "8443:8443"
     volumes:
       - ./www/source:/source
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d/:/etc/nginx/conf.d/:ro
+      # 需要开启SSL配置相关目录和文件
+      - ./nginx/ssl/:/etc/ssl/:ro
     networks:
       - admin
   # php-fpm
   fpm:
     #image: registry.cn-shenzhen.aliyuncs.com/yxw-docker/php
-    image: chenwl2016/php-fpm-supervisor:1.0.0
+    image: chenwl2016/php-fpm-supervisor:1.0.12
     container_name: php
     hostname: php
+    restart: always
     ports:
       - "9000"
     volumes:
       - ./www/source:/source
       - ./php-fpm/php.ini-production:/usr/local/etc/php/php.ini:ro
-      - ./php-fpm/cron/laravel:/var/spool/cron/crontabs/laravel
+      # 定时任务执行出问题,暂用supervisor 配置conf执行定期任务
+      #- ./php-fpm/cron/laravel:/var/spool/cron/crontabs/root
       - ./php-fpm/supervisor/program.conf:/etc/supervisor/conf.d/program.conf
+      - ./php-fpm/supervisor/supervisord.conf:/etc/supervisord.conf
+      - ./php-fpm/supervisor/schedule.sh:/etc/supervisor/conf.d/schedule.sh
     command: supervisord -c /etc/supervisor/supervisord.conf
     networks:
       - admin
@@ -36,13 +44,14 @@ services:
     image: mysql:5.7
     container_name: mysql
     hostname: mysql
+    restart: always
     ports:
       - "3306:3306"
     volumes:
       - ./mysql:/var/lib/mysql
       - ./my.cnf:/etc/mysql/conf.d/my.cnf
     environment:
-      - MYSQL_ROOT_PASSWORD=century2k
+      - MYSQL_ROOT_PASSWORD=Mysqlpassword
     networks:
       - admin
 
